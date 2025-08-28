@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ExamEASY </title>
+    <link
+      href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <!-- <link rel="icon" type="image/png" href="icons/favicon.png"> -->
+    <link rel="icon" pan-favicon="" type="image/svg+xml" href="data:image/svg+xml;charset=UTF-8;base64,PHN2ZyBkYXRhLWljb24tbmFtZT0id2VsY29tZVNlY3Rpb25JY29uIiB2aWV3Qm94PSIwIDAgMjQgMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjRUE0MzM1IiBkPSJNMTUuMjc0IDcuNjgzbC43NjguMDE1IDIuMDk0LTIuMDkuMTA0LS44ODNhOS4zNzkgOS4zNzkgMCAwMC0xNS4yOTcgNC41NmMuMjE2LS4xNTguNzA3LS4wNC43MDctLjA0bDQuMTc0LS42ODhzLjIxNi0uMzUzLjMyMi0uMzMxYTUuMjAzIDUuMjAzIDAgMDE3LjEyLS41NDNoLjAwOHoiPjwvcGF0aD48cGF0aCBmaWxsPSIjNDI4NUY0IiBkPSJNMjEuMDY0IDkuMjg5YTkuNDA5IDkuNDA5IDAgMDAtMi44MzQtNC41NjdsLTIuOTQ2IDIuOTQ2YTUuMjA0IDUuMjA0IDAgMDExLjk0NSA0LjA1OXYuNTM4YTIuNjEgMi42MSAwIDExMCA1LjIxN2gtNS4yM2wtLjUyLjUyNnYzLjEyNWwuNTIuNTJoNS4yMTdBNi43NzggNi43NzggMCAwMDIxLjA2NCA5LjI5eiI+PC9wYXRoPjxwYXRoIGZpbGw9IiMzNEE4NTMiIGQ9Ik02Ljc4MSAyMS42NTRIMTJWMTcuNDhINi43OGEyLjU4NyAyLjU4NyAwIDAxLTEuMDc1LS4yNDZsLS43NTEuMjMxLTIuMDkgMi4xLS4xODEuNzA2YTYuNzQ1IDYuNzQ1IDAgMDA0LjA5NyAxLjM4M3oiPjwvcGF0aD48cGF0aCBmaWxsPSIjRkJCQzA0IiBkPSJNNi43ODEgOC4wOWE2Ljc3OSA2Ljc3OSAwIDAwLTQuMDk1IDEyLjE4MWwzLjAyNS0zLjAyNWEyLjYwNyAyLjYwNyAwIDExMy40MzctMy40MzdsMy4wMzUtMy4wMzVBNi43NzYgNi43NzYgMCAwMDYuNzggOC4wOTF6Ij48L3BhdGg+PC9zdmc+">
+    <link rel="manifest" href="site.webmanifest">
+  </head>
+  <body class="mdc-typography">
+    <header class="mdc-top-app-bar">
+      <div class="mdc-top-app-bar__row">
+        <section
+          class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start"
+        >
+          <i class="logo material-icons">mic</i>
+          <span class="mdc-top-app-bar__title">ExamEASY - Gemini</span>
+        </section>
+        <section
+          class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end"
+          role="toolbar"
+        >
+        <label id="namePlaceholder">Login</label>
+        <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" id="signInButton">login</button>
+        </section>
+      </div>
+    </header>
+    <main class="mdc-top-app-bar--fixed-adjust"  id="mainDiv">
+      
+      
+      <section class="sound-clips">
+        <div class="sound-clips-container">
+          <div class="mdc-card resume resume-text">            
+            <div class="my-card__media mdc-card__media">
+            </div>
+            <div class="mdc-card__actions  recording-invisible">
+              <textarea class="resume-textarea" rows="100" cols="200"></textarea>
+              <button class="mdc-icon-button material-icons content-copy">
+                content_copy
+              </button>
+            </div>            
+          </div>
+          
+          <div class="cam">
+            <img  id="cam-img" class="hidden">
+            <embed class="hidden"  id="cam-embed" />
+            <input type="file" accept="image/*,.pdf" style="display: none;" id="file_input"/>
+          </div>
+        </div>
+      </section>
+
+      <div id="record-outline">
+        <button class="mdc-fab" id="record">
+          <i
+            class="material-icons mdc-icon-button__icon mdc-icon-button__icon--on"
+            >record</i
+          >
+          <i class="material-icons mdc-icon-button__icon"
+            >add_a_photo</i
+          >
+        </button>
+      </div>
+    </main>
+    <script src="/config.js"></script>
+    <script type="module" src="/firebase.mjs"></script>
+    <!-- <script type="module" src="app.mjs"></script> -->
+  </body>
+</html>

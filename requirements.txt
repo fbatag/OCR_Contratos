@@ -1,0 +1,16 @@
+Flask==3.0.3
+flask-cors
+gunicorn==22.0.0
+filetype
+firebase-admin==6.5.0
+filetype
+structlog==24.1.0
+google-cloud-storage
+google-cloud-bigquery
+google-cloud-aiplatform
+google-genai
+google-cloud-pubsub
+werkzeug
+urllib3<2.0.0 #https://stackoverflow.com/questions/76175361/firebase-authentication-httpresponse-object-has-no-attribute-strict-status
+flask_swagger_ui
+pyyaml
