@@ -34,6 +34,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from yaml import Loader, load
 
 import middleware
+import genai_util
 from middleware import jwt_authenticated, logger
 import model_prompts
 
@@ -45,58 +46,14 @@ if CORS_ORIGINS:
     CORS(app, resources={r"*": {"origins": CORS_ORIGINS }})
 print(f"Service parameters: MODEL_NAME: {MODEL_NAME} CORS_ORIGINS: {CORS_ORIGINS}")
 
-client = genai.Client(
-      vertexai=True,
-      #project=os.getenv("PROJECT_ID"),
-      location="global",
-    )
-valida_documentos_config = types.GenerateContentConfig(
-        temperature = 0.5,
-        safety_settings = [types.SafetySetting(
-              category="HARM_CATEGORY_HATE_SPEECH",
-              threshold="OFF"
-            ),types.SafetySetting(
-              category="HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold="OFF"
-            ),types.SafetySetting(
-              category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold="OFF"
-            ),types.SafetySetting(
-              category="HARM_CATEGORY_HARASSMENT",
-              threshold="OFF"
-        )],
-        system_instruction=[types.Part.from_text(text=model_prompts.valida_documentos)],
-        thinking_config=types.ThinkingConfig(
-          thinking_budget=128,
-        ),
-    )
+client = genai.Client(vertexai=True, location="global") #project=os.getenv("PROJECT_ID") -> pega do ambiente
+valida_documentos_config = genai_util.getGenAiConfig(model_prompts.valida_documentos)
+valida_titular_config = genai_util.getGenAiConfig(model_prompts.valida_titular)
 
-valida_titular_config = types.GenerateContentConfig(
-        temperature = 0.5,
-        safety_settings = [types.SafetySetting(
-              category="HARM_CATEGORY_HATE_SPEECH",
-              threshold="OFF"
-            ),types.SafetySetting(
-              category="HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold="OFF"
-            ),types.SafetySetting(
-              category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold="OFF"
-            ),types.SafetySetting(
-              category="HARM_CATEGORY_HARASSMENT",
-              threshold="OFF"
-        )],
-        system_instruction=[types.Part.from_text(text=model_prompts.valida_titular)],
-        thinking_config=types.ThinkingConfig(
-          thinking_budget=128,
-        ),
-    )
 ### swagger specific ###
 SWAGGER_URL = '/docs'
 swagger_yml = load(open('./static/openapi.yaml', 'r'), Loader=Loader)
-swaggerui_blueprint = get_swaggerui_blueprint(
-    SWAGGER_URL,
-    '/static/openapi.yaml',
+swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL,'/static/openapi.yaml',
     config={
         'spec': swagger_yml
     }
@@ -106,35 +63,30 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 @app.route("/", methods=["POST"])
 @jwt_authenticated
 def val_docs() -> Response:
+    return valida(request, "doc")
+
+@app.route("/val_tit", methods=["POST"])
+#@jwt_authenticated
+def val_tit() -> Response:
+    return valida(request, "")
+        
+def valida(request, operacao):
     try:
-        final_response = valida_documentos(request)
-        if not final_response:
+        parts = []
+        parts.append(types.Part.from_text(text=getPrompt(request, operacao)))
+        parts.extend(getDocumentsParts(request))
+        response = getResponse(valida_documentos_config, parts)
+        if not response:
             return returnError()
         return Response(
                 status=200,
-                #mimetype='application/json', 
-                response=final_response
+                mimetype='application/json', 
+                response=response
                 )
     except Exception as e:
         logger.exception(e)
         return returnError()
 
-@app.route("/val_tit", methods=["POST"])
-#@jwt_authenticated
-def val_tit() -> Response:
-    try:
-        final_response = valida_titular(request)
-        if not final_response:
-            return returnError()
-        return Response(
-                status=200,
-                mimetype='application/json', 
-                response=final_response
-                )
-    except Exception as e:
-        logger.exception(e)
-        return returnError()
-        
 def returnError():
     return Response(
         status=400,
@@ -142,30 +94,16 @@ def returnError():
         "application logs for more details.",
     )
 
-def valida_documentos(request):
+def getPrompt(request, operacao):
     titular, nro_dep = getDadosValidacao(request)
-    parts = []
-    parts.append(types.Part.from_text(
-        text=f"""Titular: {titular} 
-        Quantidade de dependentes: {str(nro_dep)} 
+    if operacao == "doc":
+        return f"""Titular: {titular} 
+            Quantidade de dependentes: {str(nro_dep)} 
+            Data de hoje: {date.today().strftime('%d/%m/%Y')}
+            Documentos:"""
+    return f"""Titular: {titular} 
         Data de hoje: {date.today().strftime('%d/%m/%Y')}
-        Documentos:"""
-    ))
-    parts.extend(getDocumentsParts(request))
-    return getResponse(valida_documentos_config, parts)
-
-def valida_titular(request):
-    titular, nro_dep = getDadosValidacao(request)
-    parts = []
-    parts.append(types.Part.from_text(
-        text=f"""Titular: {titular} 
-        Data de hoje: {date.today().strftime('%d/%m/%Y')}
-        Documentos:"""
-    ))
-    parts.extend(getDocumentsParts(request))
-    print(f"parts {parts}")
-    return getResponse(valida_titular_config, parts)
-
+        Documentos:""" 
 
 def getResponse(config, parts):
     contents = [
@@ -211,7 +149,6 @@ def getDocumentsParts(request):
 
 def getDadosValidacao(request):
     return request.form.get("nome_titular","ERIC ALVES SILVA"), int(request.form.get("quantidade_dependentes",0))
-
 
 def uniquefy_filename(filename):
     file_name_ext = secure_filename(filename).split('.')
