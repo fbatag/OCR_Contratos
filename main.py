@@ -66,7 +66,7 @@ def val_docs() -> Response:
     return valida(request, "doc")
 
 @app.route("/val_tit", methods=["POST"])
-#@jwt_authenticated
+@jwt_authenticated
 def val_tit() -> Response:
     return valida(request, "")
         
@@ -134,8 +134,7 @@ def getDocumentsParts(request):
             with open(file_path, "rb") as uploadfile:
                 file_bytes = uploadfile.read()
             os.remove(file_path)
-            logger.info(f"{file_name} - file is {mime_type}.")
-
+            #logger.info(f"{file_name} - file is {mime_type}.")
             documentParts.append(types.Part(
                             inline_data={
                                 "mime_type": mime_type,
