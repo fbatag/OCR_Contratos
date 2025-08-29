@@ -14,3 +14,4 @@ werkzeug
 urllib3<2.0.0 #https://stackoverflow.com/questions/76175361/firebase-authentication-httpresponse-object-has-no-attribute-strict-status
 flask_swagger_ui
 pyyaml
+Pillow

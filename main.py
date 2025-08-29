@@ -15,7 +15,9 @@
 #from IPython.display import Markdown
 from google import genai
 from google.genai import types
-from datetime import date, datetime
+import io
+from PIL import Image
+from datetime import datetime
 
 import os
 import tempfile
@@ -37,6 +39,7 @@ import middleware
 import genai_util
 from middleware import jwt_authenticated, logger
 import model_prompts
+import response_schemas
 
 
 app = Flask(__name__, static_folder="static", static_url_path="")
@@ -46,9 +49,17 @@ if CORS_ORIGINS:
     CORS(app, resources={r"*": {"origins": CORS_ORIGINS }})
 print(f"Service parameters: MODEL_NAME: {MODEL_NAME} CORS_ORIGINS: {CORS_ORIGINS}")
 
-client = genai.Client(vertexai=True, location="global") #project=os.getenv("PROJECT_ID") -> pega do ambiente
-valida_documentos_config = genai_util.getGenAiConfig(model_prompts.valida_documentos)
-valida_titular_config = genai_util.getGenAiConfig(model_prompts.valida_titular)
+CNH = "CNH"
+RG = "RG"
+CN = "CN"
+CC = "CC"
+
+doc_config = {
+    CNH: genai_util.getGenAiConfig(model_prompts.valida_CNH, response_schemas.CNH),
+    RG: genai_util.getGenAiConfig(model_prompts.valida_RG, response_schemas.RG),
+    CN: genai_util.getGenAiConfig(model_prompts.valida_CN, response_schemas.CN),
+    CC: genai_util.getGenAiConfig(model_prompts.valida_CC, response_schemas.CC)
+}
 
 ### swagger specific ###
 SWAGGER_URL = '/docs'
@@ -60,94 +71,71 @@ swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL,'/static/openapi.yaml'
 )
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
+       
 @app.route("/", methods=["POST"])
 @jwt_authenticated
-def val_docs() -> Response:
-    return valida(request, "doc")
-
-@app.route("/val_tit", methods=["POST"])
-@jwt_authenticated
-def val_tit() -> Response:
-    return valida(request, "")
-        
-def valida(request, operacao):
+def read_doc() -> Response:
+    docType = request.form.get("doc-type", "").upper()
+    print(f"docType: {docType}")
+    if not docType in doc_config:
+        return returnError(f"Campo doc-type desconhecido. Recebido: {docType}")
     try:
+        client = genai.Client(vertexai=True, location="global") #project=os.getenv("PROJECT_ID") -> pega do ambiente
         parts = []
-        parts.append(types.Part.from_text(text=getPrompt(request, operacao)))
-        parts.extend(getDocumentsParts(request))
-        response = getResponse(valida_documentos_config, parts)
-        if not response:
-            return returnError()
+        #parts.append(types.Part.from_text(text="siga as instruções"))
+        parts.append(types.Part.from_text(text="siga as instruções"))
+        parts.append(getDocumentPart(request))
+        contents = [
+            types.Content(
+            role="user",
+            parts=parts
+            )
+        ]
+        response = client.models.generate_content(
+            model = MODEL_NAME,
+            contents = contents,
+            config = doc_config[docType]
+        )
+        print(response.text)
         return Response(
                 status=200,
                 mimetype='application/json', 
-                response=response
+                response=response.text
                 )
     except Exception as e:
         logger.exception(e)
-        return returnError()
+        return returnError(f"não foi possível ler o documento. Erro: {e}")
 
-def returnError():
+def returnError(error):
     return Response(
         status=400,
-        response="Unable to analyze the data! Please check the "
-        "application logs for more details.",
+        response=error
     )
 
-def getPrompt(request, operacao):
-    titular, nro_dep = getDadosValidacao(request)
-    if operacao == "doc":
-        return f"""Titular: {titular} 
-            Quantidade de dependentes: {str(nro_dep)} 
-            Data de hoje: {date.today().strftime('%d/%m/%Y')}
-            Documentos:"""
-    return f"""Titular: {titular} 
-        Data de hoje: {date.today().strftime('%d/%m/%Y')}
-        Documentos:""" 
+def getDocumentPart(request):
+    if not request.files:
+        raise Exception("Falta o documento")
+    file_storage = next(iter(request.files.values()))
+    rec_file_name = file_storage.filename
+    file_name = uniquefy_filename(rec_file_name)
+    logger.info(f"{file_name} - Received filename: {rec_file_name}")
+    mime_type = ""
+    file_path = os.path.join(tempfile.gettempdir(), file_name)  
+    file_storage.save(file_path)
+    mime_type = getMimeType(file_path)
+    with open(file_path, "rb") as uploadfile:
+        file_bytes = uploadfile.read()
+    #file_bytes = file_storage.read()
+    os.remove(file_path)
+    logger.info(f"{file_name} - file is {mime_type}.")
+    return types.Part(inline_data={"mime_type": mime_type,"data": file_bytes})
 
-def getResponse(config, parts):
-    contents = [
-        types.Content(
-          role="user",
-          parts=parts
-        ),
-    ]
-    response = client.models.generate_content(
-        model = MODEL_NAME,
-        contents = contents,
-        config = config
-    )
-    print(response.text)
-    return response.text
-
-def getDocumentsParts(request):
-    documentParts = []
-    files = request.files.to_dict()
-    for rec_file_name, file in files.items():
-        file_name = uniquefy_filename(rec_file_name)
-        logger.info(f"{file_name} - Received filename: {rec_file_name}")
-        mime_type = ""
-        try:
-            file_path = os.path.join(tempfile.gettempdir(), file_name)  
-            file.save(file_path)
-            mime_type = getMimeType(file_path)
-            with open(file_path, "rb") as uploadfile:
-                file_bytes = uploadfile.read()
-            os.remove(file_path)
-            #logger.info(f"{file_name} - file is {mime_type}.")
-            documentParts.append(types.Part(
-                            inline_data={
-                                "mime_type": mime_type,
-                                "data": file_bytes
-                                }            
-                            ))
-        except Exception as e:
-            logger.warning(f"{file_name}:{mime_type} -  error: {e}")
-     
-    return documentParts
-
-def getDadosValidacao(request):
-    return request.form.get("nome_titular","ERIC ALVES SILVA"), int(request.form.get("quantidade_dependentes",0))
+    #todas tentativas falhas de leitura
+    #return Image.open(io.BytesIO(file_storage.read()))
+    #return types.Part.from_data(mime_type=mime_type, data=file_bytes)
+    #return types.Part(inline_data={"mime_type": mime_type,"data": io.BytesIO(file_storage.read())})
+    #return types.Part(inline_data={"mime_type": mime_type,"data": file_storage.read()})
+    
 
 def uniquefy_filename(filename):
     file_name_ext = secure_filename(filename).split('.')
