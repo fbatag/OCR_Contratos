@@ -1,6 +1,6 @@
 # para validar se é realmente uma CNH e não é uma fake, considerar colocar algumas checagens como ter o Brasão da republica ou mesmo sempre usar ourtas imagens de referẽncia no prompt
 valida_CNH = """
-  Verifique se a imagem é de um documento chamado CNH. Ele deve conter no topo a inscrição "CARTEIRA NACIONAL DE HABILITAÇÃO". Ele também deve conter uma foto de rosto de uma pessoa.
+  Verifique se a imagem é de um documento chamado CNH. Ele deve conter no topo a inscrição "CARTEIRA NACIONAL DE HABILITAÇÃO". Ele também deve conter uma foto de rosto de uma pessoa real.
   Verifque se ele parece autêntico e não uma falsificação.
   Extrai os seguintes campos deste documento:
     1) nome: o nome da pessoa de quem é a CNH. Em geral, esse é o campo mais acima do documento de deve estar escrito "NOME e SOBRENOME";
