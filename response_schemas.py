@@ -1,5 +1,4 @@
 CNH = {
-  "type": "object",
   "properties": {
     "cpf": {
       "type": "string",
@@ -26,14 +25,14 @@ CNH = {
       "description": "Data de validade do documento ou cadastro."
     },
     "valid": {
-        "type": "string",
-        "description": "Indica se o cadastro está válido.",
-        "enum": [
-            "sim",
-            "nao",
-            "suspeito"
-            ]
-        }
+      "type": "string",
+      "description": "Indica se o cadastro está válido.",
+      "enum": [
+        "sim",
+        "nao",
+        "suspeito"
+      ]
+    }
   }
 }
 
