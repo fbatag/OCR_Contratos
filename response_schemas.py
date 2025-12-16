@@ -19,7 +19,7 @@ CNH = {
     },
     "birth_date": {
       "type": "string",
-      "description": "Data de nascimento.",
+      "description": "Data de nascimento."
     },
     "expiration": {
       "type": "string",
