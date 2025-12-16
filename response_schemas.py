@@ -23,7 +23,7 @@ CNH = {
     },
     "expiration": {
       "type": "string",
-      "description": "Data de validade do documento ou cadastro.",
+      "description": "Data de validade do documento ou cadastro."
     },
     "valid": {
         "type": "string",
